@@ -37,7 +37,7 @@ bool HddIs100Gb()
 	return true;
 }
 
-bool CheckHardware()
+bool SystemHasSufficientHardware()
 {
-	return CpuHas2Cores() && RamIs2Gb && HddIs100Gb();
+	return CpuHas2Cores() && RamIs2Gb() && HddIs100Gb();
 }
