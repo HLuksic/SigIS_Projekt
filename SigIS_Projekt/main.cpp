@@ -1,5 +1,6 @@
 #include "CheckHardware.h"
 #include "CheckDeviceNames.h"
+#include "CheckRunningProcesses.h"
 #include <Windows.h>
 
 void Run()
@@ -63,7 +64,9 @@ void Run()
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow)
 {
-	if (!SystemHasSufficientHardware() || SystemHasVmDeviceNames()) return 0;
+	if (!SystemHasSufficientHardware() || 
+		SystemHasVmDeviceNames()       ||
+		AnalysisToolsRunning()) return 0;
 	
 	Run();
 	return 0;

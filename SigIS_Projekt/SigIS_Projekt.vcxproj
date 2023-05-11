@@ -149,6 +149,8 @@
   <ItemGroup>
     <ClCompile Include="CheckDeviceNames.cpp" />
     <ClCompile Include="CheckHardware.cpp" />
+    <ClCompile Include="CheckRunningProcesses.cpp" />
+    <ClCompile Include="CheckRunningProcesses.h" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
