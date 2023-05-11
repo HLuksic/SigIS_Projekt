@@ -13,12 +13,6 @@
 #define ProcessDebugFlags 0x1F
 #define THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER 0x4
 
-
-bool checkIfDebuggerPresent() 
-{
-	return IsDebuggerPresent();
-}
-
 bool checkIfRemoteDebuggerPresent()
 {
 	BOOL isDebuggerPresent = FALSE;
@@ -195,9 +189,10 @@ bool processAllExceptions()
 	return RemoveVectoredExceptionHandler(CustomVectoredExceptionHandler2);
 }
 
-bool selfDebuggingProcess()
+bool NoSelfDebugging()
 {
 	DWORD pid = GetCurrentProcessId();
+	
 	if (!DebugActiveProcess(pid))
 	{
 		HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
@@ -247,38 +242,33 @@ EXTERN_C const PIMAGE_TLS_CALLBACK tls_callback_function = TlsCallback;
 
 //BlockInput(true);
 
-bool checkDebuggerPresent() 
+bool DebuggerNotPresent() 
 {
-	return checkIfDebuggerPresent() && checkIfRemoteDebuggerPresent();
+	return IsDebuggerPresent() && checkIfRemoteDebuggerPresent();
 }
 
-bool checkDebuggerFlagSet()
+bool DebuggerFlagsNotSet()
 {
 	return checkSpecifigDebuggerFlagsSet && checkHeapDebuggerFlagSet() && checkProcessDebugObjectHandle();
 }
 
-bool detectBreakpoints()
+bool NoBreakpoints()
 {
 	return detectSoftwareBreakpoints() && detectHardwareBreakpoints()
 		&& detectBreakpointsByMemoryPages()
 		&& createBreakpointInterrupt() && createBreakpointInterruptForx64dbg();
 }
 
-bool detectExceptionDebbuging() 
+bool NoExceptionDebugging() 
 {
 	return detectDebuggingByUnhandledExceptionFilter() 
 		&& vectoredExceptionHandler() 
 		&& processAllExceptions();
 }
 
-bool selfDebugging()
+bool IsBeingDebugged()
 {
-	return selfDebuggingProcess();
-}
-
-bool checkAntiDebugging()
-{
-	return checkDebuggerPresent() && checkDebuggerFlagSet() 
-		&& detectBreakpoints() 
-		&& detectExceptionDebbuging() && selfDebugging();
+	return DebuggerNotPresent() && DebuggerFlagsNotSet() 
+		&& NoBreakpoints() 
+		&& NoExceptionDebugging() && NoSelfDebugging();
 }

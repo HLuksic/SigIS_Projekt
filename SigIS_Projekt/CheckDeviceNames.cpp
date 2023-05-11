@@ -23,6 +23,14 @@ bool SystemHasVirtualDevice()
 	return false;
 }
 
+bool ContainsBadString(PWSTR HDDName)
+{
+	return 
+		wcsstr(HDDName, L"VBOX")   ||
+		wcsstr(HDDName, L"VMWARE") ||
+		wcsstr(HDDName, L"VM");
+}
+
 bool HardDriveContainsVMString()
 {
 	SP_DEVINFO_DATA deviceInfoData{};
@@ -40,8 +48,7 @@ bool HardDriveContainsVMString()
 	
 	CharUpperW(HDDName);
 	
-	// Look for VM-like HDD device names
-	if (wcsstr(HDDName, L"VBOX") || wcsstr(HDDName, L"VMWARE") || wcsstr(HDDName, L"VM")) return true;
+	if (ContainsBadString(HDDName)) return true;
 
 	return false;
 }

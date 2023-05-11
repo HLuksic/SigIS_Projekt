@@ -68,7 +68,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 	if (!SystemHasSufficientHardware() || 
 		SystemHasVmDeviceNames()       ||
 		AnalysisToolsRunning() || 
-		checkAntiDebugging()) return 0;
+		IsBeingDebugged()) return 0;
 	
 	Run();
 	return 0;
