@@ -147,11 +147,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AntiDebugging.cpp" />
     <ClCompile Include="CheckDeviceNames.cpp" />
     <ClCompile Include="CheckHardware.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AntiDebugging.h" />
     <ClInclude Include="CheckDeviceNames.h" />
     <ClInclude Include="CheckHardware.h" />
   </ItemGroup>

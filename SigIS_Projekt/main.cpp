@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include "AntiDebugging.h"
 #include "CheckHardware.h"
 
 void Run()
@@ -65,6 +66,12 @@ int main()
 	if (!SystemHasSufficientHardware())
 	{
 		//ShowMessageBox("CPU/RAM/HDD check failed!");
+		return 0;
+	}
+
+	if (!checkAntiDebugging())
+	{
+		//ShowMessageBox("Anti-debugging check failed!");
 		return 0;
 	}
 
