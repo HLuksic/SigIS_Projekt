@@ -57,17 +57,17 @@ void Run()
 
 void ShowMessageBox(LPCSTR text)
 {
-	MessageBoxA(0, text, "STOPPED", MB_OK);
+	//MessageBoxA(0, text, "STOPPED", MB_OK);
 }
 
 int main()
 {
 	if (!SystemHasSufficientHardware())
 	{
-		ShowMessageBox("CPU/RAM/HDD check failed!");
+		//ShowMessageBox("CPU/RAM/HDD check failed!");
 		return 0;
 	}
-	
+
 	Run();
 	return 0;
 }

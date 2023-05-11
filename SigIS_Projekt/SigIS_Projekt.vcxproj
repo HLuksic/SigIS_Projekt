@@ -80,7 +80,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies />
     </Link>
+    <PostBuildEvent>
+      <Command>signtool.exe sign /v /f "C:\Users\Hrvoje\source\repos\SigIS_Projekt\SigCert.pfx" /t "http://timestamp.sectigo.com" "C:\Users\Hrvoje\source\repos\SigIS_Projekt\x64\Release\SigIS_Projekt.exe"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -96,7 +100,11 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalDependencies />
     </Link>
+    <PostBuildEvent>
+      <Command>signtool.exe sign /v /f "C:\Users\Hrvoje\source\repos\SigIS_Projekt\SigCert.pfx" /t "http://timestamp.sectigo.com" "C:\Users\Hrvoje\source\repos\SigIS_Projekt\x64\Release\SigIS_Projekt.exe"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -108,7 +116,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies />
     </Link>
+    <PostBuildEvent>
+      <Command>signtool.exe sign /v /f "C:\Users\Hrvoje\source\repos\SigIS_Projekt\SigCert.pfx" /t "http://timestamp.sectigo.com" "C:\Users\Hrvoje\source\repos\SigIS_Projekt\x64\Release\SigIS_Projekt.exe"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -124,7 +136,11 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalDependencies />
     </Link>
+    <PostBuildEvent>
+      <Command>signtool.exe sign /v /f "C:\Users\Hrvoje\source\repos\SigIS_Projekt\SigCert.pfx" /t "http://timestamp.sectigo.com" "C:\Users\Hrvoje\source\repos\SigIS_Projekt\x64\Release\SigIS_Projekt.exe"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CheckHardware.cpp" />

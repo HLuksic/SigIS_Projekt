@@ -21,9 +21,15 @@
     <ClCompile Include="CheckHardware.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CheckDeviceNames.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CheckHardware.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckDeviceNames.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
