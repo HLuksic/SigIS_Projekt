@@ -6,7 +6,7 @@
 #pragma comment (lib, "Setupapi.lib")
 #pragma comment (lib, "ntdll.lib")
 
-bool SystemHasVirtualDevices()
+bool SystemHasVirtualDevice()
 {
 	OBJECT_ATTRIBUTES objectAttributes{};
 	UNICODE_STRING uDeviceName{};
@@ -14,25 +14,29 @@ bool SystemHasVirtualDevices()
 	IO_STATUS_BLOCK ioStatusBlock;
 	
 	RtlSecureZeroMemory(&uDeviceName, sizeof(uDeviceName));
-	RtlInitUnicodeString(&uDeviceName, L"\\Device\\VBoxGuest"); // or pipe: L"\\??\\pipe\\VBoxTrayIPC-<username>"
+	RtlInitUnicodeString(&uDeviceName, L"\\Device\\VBoxGuest");
 	InitializeObjectAttributes(&objectAttributes, &uDeviceName, OBJ_CASE_INSENSITIVE, 0, NULL);
 	NTSTATUS status = NtCreateFile(&hDevice, GENERIC_READ, &objectAttributes, &ioStatusBlock, NULL, 0, 0, FILE_OPEN, 0, NULL, 0);
 	
-	if (NT_SUCCESS(status)) return false;
+	if (NT_SUCCESS(status)) return true;
+
+	return false;
 }
 
 bool HardDriveContainsVMString()
 {
-	HDEVINFO hDevInfo = SetupDiGetClassDevs(&GUID_DEVCLASS_DISKDRIVE, 0, 0, DIGCF_PRESENT);
-	SP_DEVINFO_DATA deviceInfoData;
+	SP_DEVINFO_DATA deviceInfoData{};
+	
+	// Get HDD information set handle
+	HDEVINFO hDeviceInfo = SetupDiGetClassDevs(&GUID_DEVCLASS_DISKDRIVE, 0, 0, DIGCF_PRESENT);
 	deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
-	SetupDiEnumDeviceInfo(hDevInfo, 0, &deviceInfoData);
+	SetupDiEnumDeviceInfo(hDeviceInfo, 0, &deviceInfoData);
 	
 	DWORD propertyBufferSize;
-	SetupDiGetDeviceRegistryPropertyW(hDevInfo, &deviceInfoData, SPDRP_FRIENDLYNAME, NULL, NULL, 0, &propertyBufferSize);
+	SetupDiGetDeviceRegistryPropertyW(hDeviceInfo, &deviceInfoData, SPDRP_FRIENDLYNAME, NULL, NULL, 0, &propertyBufferSize);
 	
 	PWSTR HDDName = (PWSTR)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, propertyBufferSize);
-	SetupDiGetDeviceRegistryPropertyW(hDevInfo, &deviceInfoData, SPDRP_FRIENDLYNAME, NULL, (PBYTE)HDDName, propertyBufferSize, NULL);
+	SetupDiGetDeviceRegistryPropertyW(hDeviceInfo, &deviceInfoData, SPDRP_FRIENDLYNAME, NULL, (PBYTE)HDDName, propertyBufferSize, NULL);
 	
 	CharUpperW(HDDName);
 	
@@ -44,7 +48,7 @@ bool HardDriveContainsVMString()
 
 bool SystemHasVmDeviceNames()
 {
-	return !HardDriveContainsVMString();
+	return SystemHasVirtualDevice() || HardDriveContainsVMString();
 }
 
 

