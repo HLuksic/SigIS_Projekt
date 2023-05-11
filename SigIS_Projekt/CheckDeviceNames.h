@@ -1,3 +1,3 @@
 #pragma once
 
-bool CheckDeviceNames();
+bool SystemHasVmDeviceNames();
