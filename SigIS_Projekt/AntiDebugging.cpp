@@ -199,6 +199,8 @@ bool NoSelfDebugging()
 		TerminateProcess(hProcess, 0);
 		return true;
 	}
+
+	return false;
 }
 
 /*bool hideThreadAndEvents()
@@ -254,9 +256,11 @@ bool DebuggerFlagsNotSet()
 
 bool NoBreakpoints()
 {
-	return detectSoftwareBreakpoints() && detectHardwareBreakpoints()
+	return detectSoftwareBreakpoints() 
+		&& detectHardwareBreakpoints()
 		&& detectBreakpointsByMemoryPages()
-		&& createBreakpointInterrupt() && createBreakpointInterruptForx64dbg();
+		&& createBreakpointInterrupt() 
+		&& createBreakpointInterruptForx64dbg();
 }
 
 bool NoExceptionDebugging() 
@@ -268,7 +272,9 @@ bool NoExceptionDebugging()
 
 bool IsBeingDebugged()
 {
-	return DebuggerNotPresent() && DebuggerFlagsNotSet() 
+	return DebuggerNotPresent() 
+		&& DebuggerFlagsNotSet() 
 		&& NoBreakpoints() 
-		&& NoExceptionDebugging() && NoSelfDebugging();
+		&& NoExceptionDebugging() 
+		&& NoSelfDebugging();
 }

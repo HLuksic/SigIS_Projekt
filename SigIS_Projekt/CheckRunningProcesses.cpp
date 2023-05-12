@@ -9,14 +9,13 @@ bool SnapshotIsValid(HANDLE& hSnapshot, PROCESSENTRY32W processEntry)
 
 bool IsBadProcess(WCHAR* processName)
 {
-	return
-		wcsstr(processName, L"WIRESHARK.EXE") ||
-		wcsstr(processName, L"IDA64.EXE")     ||
-		wcsstr(processName, L"PROCMON.EXE")   ||
-		wcsstr(processName, L"X64DBG.EXE");
+	return wcsstr(processName, L"WIRESHARK.EXE") 
+		|| wcsstr(processName, L"IDA64.EXE") 
+		|| wcsstr(processName, L"PROCMON.EXE") 
+		|| wcsstr(processName, L"X64DBG.EXE");
 }
 
-bool AnalysisProcessesRunning()
+bool AnalysisToolsRunning()
 {
 	PROCESSENTRY32W processEntry = { 0 };
 	processEntry.dwSize = sizeof(PROCESSENTRY32W);
@@ -24,7 +23,6 @@ bool AnalysisProcessesRunning()
 	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	WCHAR processName[MAX_PATH + 1];
 	
-	// If snapshot is valid
 	if (SnapshotIsValid(hSnapshot, processEntry))
 	{
 		do
@@ -38,9 +36,4 @@ bool AnalysisProcessesRunning()
 	}
 
 	return false;
-}
-
-bool AnalysisToolsRunning()
-{
-	return AnalysisProcessesRunning();
 }
