@@ -32,9 +32,7 @@ const char* const vendorBytes[] = {
 bool ContainsBadBytes(char* mac)
 {
 	for (auto& vendorByte : vendorBytes)
-	{
 		if (!memcmp(vendorByte, mac, 3)) return true;
-	}
 
 	return false;
 }

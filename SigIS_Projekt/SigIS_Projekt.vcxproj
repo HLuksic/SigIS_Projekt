@@ -54,6 +54,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -153,13 +154,20 @@
     <ClCompile Include="CheckRunningProcesses.cpp" />
     <ClCompile Include="CheckRunningProcesses.h" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="SysCalls.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AntiDebugging.h" />
     <ClInclude Include="CheckDeviceNames.h" />
     <ClInclude Include="CheckHardware.h" />
+    <ClInclude Include="main.h" />
+    <ClInclude Include="SysCalls.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="..\..\..\..\SysWhispers3\SysCalls-asm.x64.asm" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>
