@@ -50,9 +50,6 @@
     <ClInclude Include="SysCalls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="..\..\..\..\SysWhispers3\SysCalls-asm.x64.asm">

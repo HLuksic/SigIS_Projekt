@@ -1,10 +1,10 @@
 #include <Windows.h>
-#include<windows.h>
 #include <winternl.h>
 #include <Psapi.h>
 #include <intrin.h>
 #include <stdio.h>
 #include <sys/types.h>
+
 #define FLG_HEAP_ENABLE_TAIL_CHECK   0x10
 #define FLG_HEAP_ENABLE_FREE_CHECK   0x20
 #define FLG_HEAP_VALIDATE_PARAMETERS 0x40
@@ -13,78 +13,53 @@
 #define ProcessDebugFlags 0x1F
 #define THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER 0x4
 
-bool checkIfRemoteDebuggerPresent()
+bool IsRemoteDebuggerPresent()
 {
 	BOOL isDebuggerPresent = FALSE;
 	CheckRemoteDebuggerPresent(GetCurrentProcess(), &isDebuggerPresent);
+	
 	return isDebuggerPresent;
 }
 
-bool checkSpecifigDebuggerFlagsSet()
+bool IsDebuggerFlagSet()
 {
 	PDWORD pNtGlobalFlag = (PDWORD)(__readgsqword(0x60) + 0xBC);
+	
 	return (*pNtGlobalFlag) & NT_GLOBAL_FLAG_DEBUGGED;
 }
 
-bool checkHeapDebuggerFlagSet()
+bool IsHeapDebuggerFlagSet()
 {
 	PDWORD pHeapFlags = (PDWORD)((PBYTE)GetProcessHeap() + 0x70);
 	PDWORD pHeapForceFlags = (PDWORD)((PBYTE)GetProcessHeap() + 0x74);
+	
 	return *pHeapFlags ^ HEAP_GROWABLE || *pHeapForceFlags != 0;
 }
 
-bool checkProcessDebugObjectHandle()
+bool IsDebugHandleOrFlagSet()
 {
 	typedef NTSTATUS(WINAPI* PNtQueryInformationProcess)(IN HANDLE, IN PROCESSINFOCLASS, OUT PVOID, IN ULONG, OUT PULONG);
 	PNtQueryInformationProcess pNtQueryInformationProcess = (PNtQueryInformationProcess)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtQueryInformationProcess");
+	
 	HANDLE hProcessDebugObject = NULL;
 	DWORD processDebugFlags = 0;
+	
 	pNtQueryInformationProcess(GetCurrentProcess(), (PROCESSINFOCLASS)ProcessDebugObjectHandle, &hProcessDebugObject, sizeof HANDLE, NULL);
 	pNtQueryInformationProcess(GetCurrentProcess(), (PROCESSINFOCLASS)ProcessDebugFlags, &processDebugFlags, sizeof DWORD, NULL);
-	return hProcessDebugObject != NULL || processDebugFlags == 0;
+	
+	return (hProcessDebugObject != NULL) || (processDebugFlags == 0);
 }
 
-#pragma comment(linker, "/INCREMENTAL:YES")
-
-DWORD CalculateFunctionChecksum(PUCHAR functionStart, PUCHAR functionEnd)
-{
-	DWORD checksum = 0;
-	while (functionStart < functionEnd)
-	{
-		checksum += *functionStart;
-		functionStart++;
-	}
-	return checksum;
-}
-#pragma auto_inline(off)
-
-VOID CrucialFunction()
-{
-	int x = 0;
-	x += 2;
-}
-
-VOID AfterCrucialFunction()
-{
-};
-#pragma auto_inline(on)
-
-bool detectSoftwareBreakpoints() 
-{
-	DWORD originalChecksum = 3429;
-	DWORD checksum = CalculateFunctionChecksum((PUCHAR)CrucialFunction, (PUCHAR)AfterCrucialFunction);
-	return checksum != originalChecksum;
-}
-
-bool detectHardwareBreakpoints()
+bool ContainsHardwareBreakpoints()
 {
 	CONTEXT context = {};
 	context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+	
 	GetThreadContext(GetCurrentThread(), &context);
 	return context.Dr0 || context.Dr1 || context.Dr2  || context.Dr3;
 }
 
-bool detectBreakpointsByMemoryPages()
+bool HasBreakpointsInMemoryPages()
 {
 	BOOL debugged = false;
 
@@ -117,6 +92,7 @@ BOOL isDebugged = TRUE;
 LONG WINAPI CustomUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPointers)
 {
 	isDebugged = FALSE;
+	
 	return EXCEPTION_CONTINUE_EXECUTION;
 }
 
@@ -125,6 +101,7 @@ bool detectDebuggingByUnhandledExceptionFilter()
 	PTOP_LEVEL_EXCEPTION_FILTER previousUnhandledExceptionFilter = SetUnhandledExceptionFilter(CustomUnhandledExceptionFilter);
 	RaiseException(EXCEPTION_FLT_DIVIDE_BY_ZERO, 0, 0, NULL);
 	SetUnhandledExceptionFilter(previousUnhandledExceptionFilter);
+	
 	return isDebugged;
 }
 
@@ -203,62 +180,20 @@ bool NoSelfDebugging()
 	return false;
 }
 
-/*bool hideThreadAndEvents()
-{
-	typedef NTSTATUS(WINAPI* NtCreateThreadEx)(OUT PHANDLE, IN ACCESS_MASK, IN PVOID, IN HANDLE, IN PTHREAD_START_ROUTINE, IN PVOID, IN ULONG, IN SIZE_T, IN SIZE_T, IN SIZE_T, OUT PVOID);
-	NtCreateThreadEx pNtCreateThreadEx = (NtCreateThreadEx)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtCreateThreadEx");
-	HANDLE hThread;
-	pNtCreateThreadEx(&hThread, 0x1FFFFF, NULL, GetCurrentProcess(), (PTHREAD_START_ROUTINE)shellcode_exec, NULL, THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER, NULL, NULL, NULL, NULL);
-	WaitForSingleObject(hThread, INFINITE);
-}*/
-
-/*VOID CALLBACK MyCallback(DWORD errorCode, DWORD bytesTransferred, POVERLAPPED pOverlapped)
-{
-	MessageBoxW(NULL, L"Catch me if you can", L"xD", 0);
-}
-
-void tanglingExecutionPath()
-{
-	HANDLE hFile = CreateFileW(L"C:\\Windows\\win.ini", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
-	PVOID fileBuffer = VirtualAlloc(0, 64, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	OVERLAPPED overlapped = { 0 };
-	ReadFileEx(hFile, fileBuffer, 32, &overlapped, MyCallback);
-
-	WaitForSingleObjectEx(hFile, INFINITE, true);
-}*/
-
-/*void NTAPI TlsCallback(PVOID DllHandle, DWORD dwReason, PVOID)
-{
-	if (dwReason == DLL_PROCESS_ATTACH)
-	{
-		if (CheckIfDebugged()) exit(0);
-	}
-}
-
-#pragma comment (linker, "/INCLUDE:_tls_used")
-#pragma comment (linker, "/INCLUDE:tls_callback_function")
-
-#pragma const_seg(".CRT$XLA")
-EXTERN_C const PIMAGE_TLS_CALLBACK tls_callback_function = TlsCallback;
-#pragma const_seg()*/
-
-//BlockInput(true);
-
 bool DebuggerNotPresent() 
 {
-	return IsDebuggerPresent() && checkIfRemoteDebuggerPresent();
+	return !IsDebuggerPresent() && IsRemoteDebuggerPresent();
 }
 
 bool DebuggerFlagsNotSet()
 {
-	return checkSpecifigDebuggerFlagsSet && checkHeapDebuggerFlagSet() && checkProcessDebugObjectHandle();
+	return IsDebuggerFlagSet && IsHeapDebuggerFlagSet() && IsDebugHandleOrFlagSet();
 }
 
 bool NoBreakpoints()
 {
-	return detectSoftwareBreakpoints() 
-		&& detectHardwareBreakpoints()
-		&& detectBreakpointsByMemoryPages()
+	return ContainsHardwareBreakpoints()
+		&& HasBreakpointsInMemoryPages()
 		&& createBreakpointInterrupt() 
 		&& createBreakpointInterruptForx64dbg();
 }

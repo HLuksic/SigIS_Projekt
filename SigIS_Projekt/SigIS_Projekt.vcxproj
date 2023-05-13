@@ -160,7 +160,6 @@
     <ClInclude Include="AntiDebugging.h" />
     <ClInclude Include="CheckDeviceNames.h" />
     <ClInclude Include="CheckHardware.h" />
-    <ClInclude Include="main.h" />
     <ClInclude Include="SysCalls.h" />
   </ItemGroup>
   <ItemGroup>
