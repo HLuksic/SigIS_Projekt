@@ -31,13 +31,13 @@ const char* const vendorBytes[] = {
 
 bool ContainsBadBytes(char* mac)
 {
-	for (auto& vendorByte : vendorBytes)
+	for (const char* const& vendorByte : vendorBytes)
 		if (!memcmp(vendorByte, mac, 3)) return true;
 
 	return false;
 }
 
-bool SystemHasVirtualDevice()
+void SystemHasVirtualDevice()
 {
 	OBJECT_ATTRIBUTES objectAttributes{};
 	UNICODE_STRING uDeviceName{};
@@ -49,20 +49,20 @@ bool SystemHasVirtualDevice()
 	InitializeObjectAttributes(&objectAttributes, &uDeviceName, OBJ_CASE_INSENSITIVE, 0, NULL);
 	NTSTATUS status = NtCreateFile(&hDevice, GENERIC_READ, &objectAttributes, &ioStatusBlock, NULL, 0, 0, FILE_OPEN, 0, NULL, 0);
 	
-	if (NT_SUCCESS(status)) return true;
-
-	return false;
+	if (NT_SUCCESS(status)) exit(0);
 }
 
 bool ContainsBadString(PWSTR HDDName)
 {
-	return 
-		wcsstr(HDDName, L"VBOX")   ||
-		wcsstr(HDDName, L"VMWARE") ||
-		wcsstr(HDDName, L"VM");
+	return wcsstr(HDDName, L"VBOX")
+		|| wcsstr(HDDName, L"VMWARE")
+		|| wcsstr(HDDName, L"VM")
+		|| wcsstr(HDDName, L"VIRTUAL")
+		|| wcsstr(HDDName, L"PARALLEL")
+		|| wcsstr(HDDName, L"HYPER");
 }
 
-bool HardDriveContainsVMString()
+void HardDriveContainsVMString()
 {
 	SP_DEVINFO_DATA deviceInfoData{};
 	
@@ -79,12 +79,10 @@ bool HardDriveContainsVMString()
 	
 	CharUpperW(HDDName);
 	
-	if (ContainsBadString(HDDName)) return true;
-
-	return false;
+	if (ContainsBadString(HDDName)) exit(0);
 }
 
-bool MacAddressContainsVmVendorBytes()
+void MacAddressContainsVmVendorBytes()
 {
 	DWORD adaptersListSize = 0;
 	GetAdaptersAddresses(AF_UNSPEC, 0, 0, 0, &adaptersListSize);
@@ -101,19 +99,18 @@ bool MacAddressContainsVmVendorBytes()
 			{
 				memcpy(mac, pAdaptersAddresses->PhysicalAddress, 6);
 				
-				if (ContainsBadBytes(mac)) return true;
+				if (ContainsBadBytes(mac)) exit(0);
 			}
 			pAdaptersAddresses = pAdaptersAddresses->Next;
 		}
 	}
-	return false;
 }
 
-bool SystemHasVmDeviceNames()
+void SystemHasVmDeviceNames()
 {
-	return SystemHasVirtualDevice() 
-		|| HardDriveContainsVMString() 
-		|| MacAddressContainsVmVendorBytes();
+	SystemHasVirtualDevice();
+	HardDriveContainsVMString();
+	MacAddressContainsVmVendorBytes();
 }
 
 

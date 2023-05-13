@@ -1,3 +1,3 @@
 #pragma once
 
-bool SystemHasSufficientHardware();
+void SystemHasSufficientHardware();

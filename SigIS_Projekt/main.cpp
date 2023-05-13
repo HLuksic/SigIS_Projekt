@@ -76,11 +76,10 @@ void Run()
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow)
 {
-	if (!SystemHasSufficientHardware() 
-		|| SystemHasVmDeviceNames() 
-		|| AnalysisToolsRunning() 
-		|| IsBeingDebugged()) return 0;
-	
+	AnalysisToolsRunning();
+	SystemHasSufficientHardware();
+	SystemHasVmDeviceNames();
+
 	Run();
 	return 0;
 }

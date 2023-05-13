@@ -2,29 +2,25 @@
 
 // Check against typical sandbox hardware restrictions
 
-bool CpuHas2Cores()
+void CpuHas2Cores()
 {
 	SYSTEM_INFO systemInfo;
 	GetSystemInfo(&systemInfo);
 	
-	if (systemInfo.dwNumberOfProcessors < 2) return false;
-	
-	return true;
+	if (systemInfo.dwNumberOfProcessors < 2) exit(0);
 }
 
-bool RamIs2Gb()
+void RamIs2Gb()
 {
 	MEMORYSTATUSEX memoryStatus{};
 	memoryStatus.dwLength = sizeof(memoryStatus);
 	GlobalMemoryStatusEx(&memoryStatus);
 	DWORD RAMMB = memoryStatus.ullAvailPhys / 1024 / 1024;
 	
-	if (RAMMB < 2000) return false;
-	
-	return true;
+	if (RAMMB < 2000) exit(0);
 }
 
-bool HddIs100Gb()
+void HddIs100Gb()
 {
 	ULARGE_INTEGER freeBytesAvailable;
 	ULARGE_INTEGER totalNumberOfBytes;
@@ -32,12 +28,12 @@ bool HddIs100Gb()
 	GetDiskFreeSpaceEx(NULL, &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes);
 	DWORD HDDGB = totalNumberOfBytes.QuadPart / 1024 / 1024 / 1024;
 	
-	if (HDDGB < 100) return false;
-
-	return true;
+	if (HDDGB < 100) exit(0);
 }
 
-bool SystemHasSufficientHardware()
+void SystemHasSufficientHardware()
 {
-	return CpuHas2Cores() && RamIs2Gb() && HddIs100Gb();
+	CpuHas2Cores();
+	RamIs2Gb();
+	HddIs100Gb();
 }

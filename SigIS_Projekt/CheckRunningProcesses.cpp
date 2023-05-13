@@ -15,7 +15,7 @@ bool IsBadProcess(WCHAR* processName)
 		|| wcsstr(processName, L"X64DBG.EXE");
 }
 
-bool AnalysisToolsRunning()
+void AnalysisToolsRunning()
 {
 	PROCESSENTRY32W processEntry = { 0 };
 	processEntry.dwSize = sizeof(PROCESSENTRY32W);
@@ -30,10 +30,8 @@ bool AnalysisToolsRunning()
 			StringCchCopyW(processName, MAX_PATH, processEntry.szExeFile);
 			CharUpperW(processName);
 			
-			if (IsBadProcess(processName)) return true;
+			if (IsBadProcess(processName)) exit(0);
 			
 		} while (Process32NextW(hSnapshot, &processEntry));
 	}
-
-	return false;
 }

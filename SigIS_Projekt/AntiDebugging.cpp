@@ -13,30 +13,30 @@
 #define ProcessDebugFlags 0x1F
 #define THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER 0x4
 
-bool IsRemoteDebuggerPresent()
+void IsRemoteDebuggerPresent()
 {
 	BOOL isDebuggerPresent = FALSE;
 	CheckRemoteDebuggerPresent(GetCurrentProcess(), &isDebuggerPresent);
 	
-	return isDebuggerPresent;
+	if (isDebuggerPresent) exit(0);
 }
 
-bool IsDebuggerFlagSet()
+void IsDebuggerFlagSet()
 {
 	PDWORD pNtGlobalFlag = (PDWORD)(__readgsqword(0x60) + 0xBC);
 	
-	return (*pNtGlobalFlag) & NT_GLOBAL_FLAG_DEBUGGED;
+	if ((*pNtGlobalFlag) & NT_GLOBAL_FLAG_DEBUGGED) exit(0);
 }
 
-bool IsHeapDebuggerFlagSet()
+void IsHeapDebuggerFlagSet()
 {
 	PDWORD pHeapFlags = (PDWORD)((PBYTE)GetProcessHeap() + 0x70);
 	PDWORD pHeapForceFlags = (PDWORD)((PBYTE)GetProcessHeap() + 0x74);
 	
-	return *pHeapFlags ^ HEAP_GROWABLE || *pHeapForceFlags != 0;
+	if (*pHeapFlags ^ HEAP_GROWABLE || *pHeapForceFlags != 0) exit(0);
 }
 
-bool IsDebugHandleOrFlagSet()
+void IsDebugHandleOrFlagSet()
 {
 	typedef NTSTATUS(WINAPI* PNtQueryInformationProcess)(IN HANDLE, IN PROCESSINFOCLASS, OUT PVOID, IN ULONG, OUT PULONG);
 	PNtQueryInformationProcess pNtQueryInformationProcess = (PNtQueryInformationProcess)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtQueryInformationProcess");
@@ -47,19 +47,19 @@ bool IsDebugHandleOrFlagSet()
 	pNtQueryInformationProcess(GetCurrentProcess(), (PROCESSINFOCLASS)ProcessDebugObjectHandle, &hProcessDebugObject, sizeof HANDLE, NULL);
 	pNtQueryInformationProcess(GetCurrentProcess(), (PROCESSINFOCLASS)ProcessDebugFlags, &processDebugFlags, sizeof DWORD, NULL);
 	
-	return (hProcessDebugObject != NULL) || (processDebugFlags == 0);
+	if ((hProcessDebugObject != NULL) || (processDebugFlags == 0)) exit(0);
 }
 
-bool ContainsHardwareBreakpoints()
+void ContainsHardwareBreakpoints()
 {
 	CONTEXT context = {};
 	context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
 	
 	GetThreadContext(GetCurrentThread(), &context);
-	return context.Dr0 || context.Dr1 || context.Dr2  || context.Dr3;
+	if (context.Dr0 || context.Dr1 || context.Dr2  || context.Dr3) exit(0);
 }
 
-bool HasBreakpointsInMemoryPages()
+void HasBreakpointsInMemoryPages()
 {
 	BOOL debugged = false;
 
@@ -77,18 +77,14 @@ bool HasBreakpointsInMemoryPages()
 		if (memoryInfo.Protect & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY))
 		{
 			if ((pWorkingSetInfo->WorkingSetInfo[i].Shared == 0) || (pWorkingSetInfo->WorkingSetInfo[i].ShareCount == 0))
-			{
-				debugged = true;
-				break;
-			}
+				exit(0);
 		}
 	}
-
-	return debugged;
 }
 
 BOOL isDebugged = TRUE;
 
+// Called only if program is not being debugged (structured exception handling)
 LONG WINAPI CustomUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPointers)
 {
 	isDebugged = FALSE;
@@ -96,77 +92,48 @@ LONG WINAPI CustomUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionPointer
 	return EXCEPTION_CONTINUE_EXECUTION;
 }
 
-bool detectDebuggingByUnhandledExceptionFilter()
+void DetectExceptionDebugging()
 {
 	PTOP_LEVEL_EXCEPTION_FILTER previousUnhandledExceptionFilter = SetUnhandledExceptionFilter(CustomUnhandledExceptionFilter);
 	RaiseException(EXCEPTION_FLT_DIVIDE_BY_ZERO, 0, 0, NULL);
 	SetUnhandledExceptionFilter(previousUnhandledExceptionFilter);
 	
-	return isDebugged;
+	if (isDebugged) exit(0);
 }
 
-
-bool createBreakpointInterrupt()
+// Detects VS and WinDbg, but not x64dbg
+bool DetectInterruptDebugging()
 {
 	BOOL isDebugged = TRUE;
+	
 	__try
 	{
-		DebugBreak();
-	}
-	__except (GetExceptionCode() == EXCEPTION_BREAKPOINT ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
-	{
-		isDebugged = FALSE;
-	}
-	return isDebugged;
-}
-
-bool createBreakpointInterruptForx64dbg()
-{
-	BOOL isDebugged = TRUE;
-	__try
-	{
+		// Causes undefined behaviour in debugger (EXCEPTION_ILLEGAL_INSTRUCTION loop)
 		RaiseException(EXCEPTION_BREAKPOINT, 0, 0, NULL);
 	}
 	__except (GetExceptionCode() == EXCEPTION_BREAKPOINT ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
 	{
 		isDebugged = FALSE;
 	}
-	return isDebugged;
+	if (isDebugged) exit(0);
 }
-
-BOOL isDebugged2 = TRUE;
 
 LONG WINAPI CustomVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionPointers)
-{
-	if (pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT)
-	{
-		pExceptionPointers->ContextRecord->Rip++;
-		return EXCEPTION_CONTINUE_EXECUTION;
-	}
-	return EXCEPTION_CONTINUE_SEARCH; // pass on other exceptions
-}
-
-bool vectoredExceptionHandler() 
-{
-	AddVectoredExceptionHandler(1, CustomVectoredExceptionHandler);
-	DebugBreak();
-	RemoveVectoredExceptionHandler(CustomVectoredExceptionHandler);
-	return isDebugged2;
-}
-
-LONG WINAPI CustomVectoredExceptionHandler2(PEXCEPTION_POINTERS pExceptionPointers)
 {
 	return EXCEPTION_CONTINUE_EXECUTION;
 }
 
-bool processAllExceptions()
+// Similar to previous function but abuses vectored exception handling
+void BreakAnalysisWithVectoredExceptions()
 {
-	AddVectoredExceptionHandler(1, CustomVectoredExceptionHandler2);
+	AddVectoredExceptionHandler(1, CustomVectoredExceptionHandler);
 	RaiseException(EXCEPTION_BREAKPOINT, 0, 0, NULL);
-	return RemoveVectoredExceptionHandler(CustomVectoredExceptionHandler2);
+	RemoveVectoredExceptionHandler(CustomVectoredExceptionHandler);
 }
 
-bool NoSelfDebugging()
+// Try to attach a process to the existing one
+// If it fails, it means that the process is being debugged
+void NoSelfDebugging()
 {
 	DWORD pid = GetCurrentProcessId();
 	
@@ -174,42 +141,19 @@ bool NoSelfDebugging()
 	{
 		HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
 		TerminateProcess(hProcess, 0);
-		return true;
 	}
-
-	return false;
 }
 
-bool DebuggerNotPresent() 
+void IsBeingDebugged()
 {
-	return !IsDebuggerPresent() && IsRemoteDebuggerPresent();
-}
-
-bool DebuggerFlagsNotSet()
-{
-	return IsDebuggerFlagSet && IsHeapDebuggerFlagSet() && IsDebugHandleOrFlagSet();
-}
-
-bool NoBreakpoints()
-{
-	return ContainsHardwareBreakpoints()
-		&& HasBreakpointsInMemoryPages()
-		&& createBreakpointInterrupt() 
-		&& createBreakpointInterruptForx64dbg();
-}
-
-bool NoExceptionDebugging() 
-{
-	return detectDebuggingByUnhandledExceptionFilter() 
-		&& vectoredExceptionHandler() 
-		&& processAllExceptions();
-}
-
-bool IsBeingDebugged()
-{
-	return DebuggerNotPresent() 
-		&& DebuggerFlagsNotSet() 
-		&& NoBreakpoints() 
-		&& NoExceptionDebugging() 
-		&& NoSelfDebugging();
+	IsRemoteDebuggerPresent();
+	IsDebuggerFlagSet();
+	IsHeapDebuggerFlagSet();
+	IsDebugHandleOrFlagSet();
+	ContainsHardwareBreakpoints();
+	HasBreakpointsInMemoryPages();
+	DetectExceptionDebugging();
+	DetectInterruptDebugging();
+	BreakAnalysisWithVectoredExceptions();
+	NoSelfDebugging();
 }

@@ -1,3 +1,3 @@
 #pragma once
 
-bool SystemHasVmDeviceNames();
+void SystemHasVmDeviceNames();
