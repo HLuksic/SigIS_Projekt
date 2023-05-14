@@ -36,6 +36,9 @@
     <ClCompile Include="SysCalls.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AntiStaticAnalysis.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CheckHardware.h">

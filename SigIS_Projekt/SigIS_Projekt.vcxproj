@@ -149,6 +149,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AntiDebugging.cpp" />
+    <ClCompile Include="AntiStaticAnalysis.cpp" />
     <ClCompile Include="CheckDeviceNames.cpp" />
     <ClCompile Include="CheckHardware.cpp" />
     <ClCompile Include="CheckRunningProcesses.cpp" />
