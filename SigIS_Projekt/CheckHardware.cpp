@@ -25,18 +25,24 @@ void IsVmHypervisor()
 	
 	hyperVendorId[12] = '\0';
 
-	static const char* vendors[]{
-		"Microsoft Hv",    // Microsoft Hyper-V
-		"VMwareVMware",    // VMWare 
-		"XenVMMXenVMM",    // Xen 
-		"prl hyperv  ",    // Parallels
-		"VBoxVBoxVBox"     // VirtualBox 
+	const char* vendors[]{
+		"Oketquqhv\"Jx",    // Microsoft Hyper-V
+		"XOyctgXOyctg",    // VMWare 
+		"ZgpXOOZgpXOO",    // Xen 
+		"rtn\"j{rgtx\"\"",    // Parallels
+		"XDqzXDqzXDqz"     // VirtualBox 
 	};
 
-	for (const auto& vendor : vendors)
+	for (int i = 0; i < 5; i++) 
 	{
-		if (!memcmp(vendor, hyperVendorId, 13))
-			exit(0);
+		char vendor[13] = {};
+		memcpy(vendor, vendors[i], 13);
+		
+		for (int i = 0; i < 13; i++) {
+			vendor[i] = vendor[i] - 2;
+		}
+		
+		if (!memcmp(vendor, hyperVendorId, 13)) exit(0);
 	}
 }
 
