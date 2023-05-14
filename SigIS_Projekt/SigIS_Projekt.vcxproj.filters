@@ -52,7 +52,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="..\..\..\..\SysWhispers3\SysCalls-asm.x64.asm">
+    <MASM Include="SysCalls-asm.x64.asm">
       <Filter>Source Files</Filter>
     </MASM>
   </ItemGroup>

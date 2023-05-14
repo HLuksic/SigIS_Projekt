@@ -163,7 +163,7 @@
     <ClInclude Include="SysCalls.h" />
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="..\..\..\..\SysWhispers3\SysCalls-asm.x64.asm" />
+    <MASM Include="SysCalls-asm.x64.asm" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
