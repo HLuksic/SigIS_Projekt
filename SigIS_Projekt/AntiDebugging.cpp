@@ -11,7 +11,12 @@
 #define NT_GLOBAL_FLAG_DEBUGGED (FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS)
 #define ProcessDebugObjectHandle 0x1E
 #define ProcessDebugFlags 0x1F
-#define THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER 0x4
+
+void CheckDebuggerFlagPeb()
+{
+	PPEB pPEB = (PPEB)__readgsqword(0x60);
+	if (pPEB->BeingDebugged) exit(0);
+}
 
 void IsRemoteDebuggerPresent()
 {
@@ -59,6 +64,8 @@ void ContainsHardwareBreakpoints()
 	if (context.Dr0 || context.Dr1 || context.Dr2  || context.Dr3) exit(0);
 }
 
+// Normally all executable pages are shared by all processes, but when a debugger
+// sets a breakpoint, the page is copied and no longer shared
 void HasBreakpointsInMemoryPages()
 {
 	BOOL debugged = false;
@@ -73,7 +80,9 @@ void HasBreakpointsInMemoryPages()
 	{
 		PVOID physicalAddress = (PVOID)(pWorkingSetInfo->WorkingSetInfo[i].VirtualPage * 4096);
 		MEMORY_BASIC_INFORMATION memoryInfo;
+		
 		VirtualQuery((PVOID)physicalAddress, &memoryInfo, sizeof memoryInfo);
+		
 		if (memoryInfo.Protect & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY))
 		{
 			if ((pWorkingSetInfo->WorkingSetInfo[i].Shared == 0) || (pWorkingSetInfo->WorkingSetInfo[i].ShareCount == 0))
@@ -101,7 +110,7 @@ void DetectExceptionDebugging()
 	if (isDebugged) exit(0);
 }
 
-// Detects VS and WinDbg, but not x64dbg
+// Detects VS and WinDbg, but not x64dbg by creating a breakpoint interrupt
 bool DetectInterruptDebugging()
 {
 	BOOL isDebugged = TRUE;
@@ -132,20 +141,21 @@ void BreakAnalysisWithVectoredExceptions()
 }
 
 // Try to attach a process to the existing one
-// If it fails, it means that the process is being debugged
-void NoSelfDebugging()
-{
-	DWORD pid = GetCurrentProcessId();
-	
-	if (!DebugActiveProcess(pid))
-	{
-		HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
-		TerminateProcess(hProcess, 0);
-	}
-}
+// If it fails, the process already has a debugger attached
+//void NoSelfDebugging()
+//{
+//	DWORD pid = GetCurrentProcessId();
+//	
+//	if (!DebugActiveProcess(pid))
+//	{
+//		HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+//		TerminateProcess(hProcess, 0);
+//	}
+//}
 
 void IsBeingDebugged()
 {
+	CheckDebuggerFlagPeb();
 	IsRemoteDebuggerPresent();
 	IsDebuggerFlagSet();
 	IsHeapDebuggerFlagSet();
@@ -155,5 +165,5 @@ void IsBeingDebugged()
 	DetectExceptionDebugging();
 	DetectInterruptDebugging();
 	BreakAnalysisWithVectoredExceptions();
-	NoSelfDebugging();
+	//NoSelfDebugging();
 }

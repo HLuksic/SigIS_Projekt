@@ -1,3 +1,3 @@
 #pragma once
 
-bool IsBeingDebugged();
+void IsBeingDebugged();

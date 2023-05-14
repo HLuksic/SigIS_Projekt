@@ -9,6 +9,7 @@
 #pragma comment (lib, "ntdll.lib")
 #pragma comment (lib, "iphlpapi.lib")
 
+// First three bytes of MAC address are hardware vendor bytes
 const char* const vendorBytes[] = {
 	// VMWare
 	"\x00\x50\x56",
@@ -37,17 +38,22 @@ bool ContainsBadBytes(char* mac)
 	return false;
 }
 
+// Try to open virtual devices specific to VMs
 void SystemHasVirtualDevice()
 {
 	OBJECT_ATTRIBUTES objectAttributes{};
 	UNICODE_STRING uDeviceName{};
 	HANDLE hDevice = NULL;
 	IO_STATUS_BLOCK ioStatusBlock;
+	NTSTATUS status = 0;
 	
 	RtlSecureZeroMemory(&uDeviceName, sizeof(uDeviceName));
 	RtlInitUnicodeString(&uDeviceName, L"\\Device\\VBoxGuest");
 	InitializeObjectAttributes(&objectAttributes, &uDeviceName, OBJ_CASE_INSENSITIVE, 0, NULL);
-	NTSTATUS status = NtCreateFile(&hDevice, GENERIC_READ, &objectAttributes, &ioStatusBlock, NULL, 0, 0, FILE_OPEN, 0, NULL, 0);
+	
+	RtlInitUnicodeString(&uDeviceName, L"\\Device\\VBoxGuest");
+
+	status = NtCreateFile(&hDevice, GENERIC_READ, &objectAttributes, &ioStatusBlock, NULL, 0, 0, FILE_OPEN, 0, NULL, 0);
 	
 	if (NT_SUCCESS(status)) exit(0);
 }
@@ -65,18 +71,16 @@ bool ContainsBadString(PWSTR HDDName)
 void HardDriveContainsVMString()
 {
 	SP_DEVINFO_DATA deviceInfoData{};
+	DWORD propertyBufferSize;
 	
-	// Get HDD information set handle
 	HDEVINFO hDeviceInfo = SetupDiGetClassDevs(&GUID_DEVCLASS_DISKDRIVE, 0, 0, DIGCF_PRESENT);
 	deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
-	SetupDiEnumDeviceInfo(hDeviceInfo, 0, &deviceInfoData);
 	
-	DWORD propertyBufferSize;
+	SetupDiEnumDeviceInfo(hDeviceInfo, 0, &deviceInfoData);
 	SetupDiGetDeviceRegistryPropertyW(hDeviceInfo, &deviceInfoData, SPDRP_FRIENDLYNAME, NULL, NULL, 0, &propertyBufferSize);
 	
 	PWSTR HDDName = (PWSTR)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, propertyBufferSize);
 	SetupDiGetDeviceRegistryPropertyW(hDeviceInfo, &deviceInfoData, SPDRP_FRIENDLYNAME, NULL, (PBYTE)HDDName, propertyBufferSize, NULL);
-	
 	CharUpperW(HDDName);
 	
 	if (ContainsBadString(HDDName)) exit(0);
