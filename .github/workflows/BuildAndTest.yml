@@ -28,4 +28,16 @@ jobs:
       
     - name: Build Solution
       run: msbuildd /p:platform="Any CPU" /p:configuration=Release
+      
+    - name: Run unit tests
+      run: dotnet test --configuration Release --filter Importers.unitTests
+      
+    - name: Run integration tests
+      run: dotnet test --configuration Release --filter Importers.IntegrationTests
+      
+    - name: Navigate to start up project
+      run: cd  PresentationLayer
+      
+    - name: Publish application
+      run: msbuild /t:Publish /p:Configuration=Release /p:PublishDir=publish/
     
