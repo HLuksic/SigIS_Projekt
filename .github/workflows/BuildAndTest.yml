@@ -40,4 +40,11 @@ jobs:
       
     - name: Publish application
       run: msbuild /t:Publish /p:Configuration=Release /p:PublishDir=publish/
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: EvaluationManagerSetup
+        path: PresentatonLayer/publish/
+          
     
