@@ -8,43 +8,43 @@ on:
 
 jobs:
   build: 
-    runs-on: windows-latest
-  
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v3.5.2
-      
-    - name: Setup NuGet
-      uses: NuGet/setup-nuget@v1.2.0
-       
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1.3.1 
+    runs-on: windows-latest 
     
-    - name: Navigate to Workspace
-      run: cd $GITHUB_WORKSPACE 
-    
-    - name: Restore NuGet packages
-      run: nuget restore
-      
-    - name: Build Solution
-      run: msbuildd /p:platform="Any CPU" /p:configuration=Release
-      
-    - name: Run unit tests
-      run: dotnet test --configuration Release --filter Importers.unitTests
-      
-    - name: Run integration tests
-      run: dotnet test --configuration Release --filter Importers.IntegrationTests
-      
-    - name: Navigate to start up project
-      run: cd  PresentationLayer
-      
-    - name: Publish application
-      run: msbuild /t:Publish /p:Configuration=Release /p:PublishDir=publish/
-      
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: EvaluationManagerSetup
-        path: PresentatonLayer/publish/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v1.2.0
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.3.1 
+
+      - name: Navigate to Workspace
+        run: cd $GITHUB_WORKSPACE 
+
+      - name: Restore NuGet packages
+        run: nuget restore
+
+      - name: Build Solution
+        run: msbuildd /p:platform="Any CPU" /p:configuration=Release
+
+      - name: Run unit tests
+        run: dotnet test --configuration Release --filter Importers.unitTests
+
+      - name: Run integration tests
+        run: dotnet test --configuration Release --filter Importers.IntegrationTests
+
+      - name: Navigate to start up project
+        run: cd  PresentationLayer
+
+      - name: Publish application
+        run: msbuild /t:Publish /p:Configuration=Release /p:PublishDir=publish/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: StoryWatchSetup
+          path: PresentatonLayer/publish/
           
     
